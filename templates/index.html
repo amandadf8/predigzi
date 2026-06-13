@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PredigZi - Jadwal Makan Bergizi</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div id="top"></div>
+
+    <div class="main-container">
+        <!-- Navbar Informatif -->
+        <nav class="navbar-custom">
+            <div class="logo"><i class="fas fa-leaf me-2"></i>predigzi</div>
+            <div class="nav-links d-none d-md-flex align-items-center">
+                <a href="#" class="active">Home</a>
+                <a href="#analisis-dataset">Analisis Dataset</a>
+                
+                <!-- Dropdown Menu Sehat -->
+                <div class="dropdown mx-3">
+                    <a class="dropdown-toggle nav-link" href="#" id="menuDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Menu Sehat
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="menuDropdown">
+                        <li><a class="dropdown-item" href="#" onclick="showNutritionInfo('SD')">🎒 Jenjang SD</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="showNutritionInfo('SMP')">🎓 Jenjang SMP</a></li>
+                        <li><a class="dropdown-item" href="#" onclick="showNutritionInfo('SMA')">🎓 Jenjang SMA</a></li>
+                    </ul>
+                </div>
+
+                
+                <a href="#"><i class="fas fa-search ms-3"></i></a>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <div class="hero-section">
+            <div class="hero-text">
+                <h1>Fresh &<br>tasty<br>meals</h1>
+                <p>Membantu menyusun menu Makan Bergizi Gratis (MBG)<br>dengan kombinasi karbohidrat, protein, dan sayuran<br>sesuai kebutuhan gizi setiap jenjang pendidikan.</p>
+                
+                <!-- Input Form -->
+                <form action="/generate" method="POST" class="mt-4">
+                    <div class="row g-2 justify-content-center">
+                        <div class="col-8 col-md-6">
+                            <select class="form-select form-select-lg" name="level" required>
+                                <option value="" disabled selected>Pilih Jenjang Pendidikan...</option>
+                                <option value="SD">Sekolah Dasar (SD)</option>
+                                <option value="SMP">Sekolah Menengah Pertama (SMP)</option>
+                                <option value="SMA">Sekolah Menengah Atas (SMA)</option>
+                            </select>
+                        </div>
+                        <div class="col-4 col-md-3">
+                            <button type="submit" class="btn btn-discover w-100">Discover</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="hero-image-wrapper">
+                <div class="yellow-circle"></div>
+                <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Healthy Food" class="hero-img">
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        {% if schedule %}
+        <div class="results-container">
+            <h2 class="section-title">Recommended Menu</h2>
+            <div class="subtitle-tags">
+                <span class="tag active">{{ selected_level }}</span>
+                <span class="tag">Seimbang</span>
+                <span class="tag">Non-Instan</span>
+                <span class="tag">Bergizi</span>
+            </div>
+
+            <div class="accordion" id="scheduleAccordion">
+                {% for week, days_data in schedule.items() %}
+                <div class="accordion-item mb-3 border-0 rounded-3 overflow-hidden shadow-sm">
+                    <h2 class="accordion-header" id="heading{{ loop.index }}">
+                        <button class="accordion-button {% if loop.index != 1 %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" aria-expanded="{% if loop.index == 1 %}true{% else %}false{% endif %}" aria-controls="collapse{{ loop.index }}">
+                            {{ week }}
+                        </button>
+                    </h2>
+                    
+                    <div id="collapse{{ loop.index }}" class="accordion-collapse collapse {% if loop.index == 1 %}show{% endif %}" aria-labelledby="heading{{ loop.index }}" data-bs-parent="#scheduleAccordion">
+                        <div class="accordion-body bg-white p-4">
+                            {% for day, menus in days_data.items() %}
+                            <div class="mb-4">
+                                <h5 class="text-secondary mb-3"><i class="far fa-calendar-alt me-2"></i>{{ day }}</h5>
+                                <div class="row g-3">
+                                    {% for menu in menus %}
+                                    <div class="col-md-4">
+                                        <!-- PERBAIKAN DI BAGIAN ONCLICK -->
+                                        <div class="menu-card"
+                                        onclick='showDetail(
+                                        {{ menu.karbo|tojson }},
+                                        {{ menu.protein|tojson }},
+                                        {{ menu.sayur|tojson }},
+                                        {{ menu.energy_kcal }},
+                                        {{ menu.protein_g }},
+                                        {{ menu.carbohydrate_g }},
+                                        {{ menu.fat_g }},
+                                        {{ menu.fiber_g }},
+                                        {{ menu.sodium_mg }}
+                                        )'>
+                                            <div class="card-icon">
+                                                <i class="fas fa-utensils"></i>
+                                            </div>
+                                            <div class="menu-score">Skor Kecocokan: {{ menu.score }}</div>
+                                            
+                                            <!-- Nama Masakan Jadi -->
+                                            <div class="menu-name">{{ menu.menu_name }}</div>
+                                            
+                                            <button class="btn btn-detail mt-auto">Lihat Detail Gizi</button>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="results-container mt-5">
+
+        <h2 id="analisis-dataset" class="section-title">
+            Analisis Dataset
+        </h2>
+
+        <div class="row g-4 mb-5">
+
+            <div class="col-md-2">
+                <div class="card text-center p-3">
+                    <h3>{{ dataset_info.jumlah_menu }}</h3>
+                    <small>Total Menu</small>
+                </div>
+            </div>
+
+            <div class="col-md-2">
+                <div class="card text-center p-3">
+                    <h3>{{ dataset_info.jumlah_karbo }}</h3>
+                    <small>Karbohidrat</small>
+                </div>
+            </div>
+
+            <div class="col-md-2">
+                <div class="card text-center p-3">
+                    <h3>{{ dataset_info.jumlah_protein }}</h3>
+                    <small>Protein</small>
+                </div>
+            </div>
+
+            <div class="col-md-2">
+                <div class="card text-center p-3">
+                    <h3>{{ dataset_info.jumlah_sayur }}</h3>
+                    <small>Sayuran</small>
+                </div>
+            </div>
+
+            <div class="col-md-2">
+                <div class="card text-center p-3">
+                    <h3>{{ dataset_info.rata_kalori }}</h3>
+                    <small>Rata Kalori</small>
+                </div>
+            </div>
+
+            <div class="col-md-2">
+                <div class="card text-center p-3">
+                    <h3>{{ dataset_info.rata_protein }}</h3>
+                    <small>Rata Protein</small>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row g-4">
+
+            <div class="col-md-6">
+                <img
+                    src="{{ url_for('static', filename='charts/distribusi_kalori.png') }}"
+                    class="img-fluid rounded shadow">
+            </div>
+
+            <div class="col-md-6">
+                <img
+                    src="{{ url_for('static', filename='charts/scatter_protein_kalori.png') }}"
+                    class="img-fluid rounded shadow">
+            </div>
+
+            <div class="col-md-6">
+                <img
+                    src="{{ url_for('static', filename='charts/top_karbo.png') }}"
+                    class="img-fluid rounded shadow">
+            </div>
+
+            <div class="col-md-6">
+                <img
+                    src="{{ url_for('static', filename='charts/top_protein.png') }}"
+                    class="img-fluid rounded shadow">
+            </div>
+
+            <div class="col-md-12">
+                <img
+                    src="{{ url_for('static', filename='charts/top_sayur.png') }}"
+                    class="img-fluid rounded shadow">
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Modal Informasi Gizi Per Jenjang -->
+    <div class="modal fade" id="nutritionInfoModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="infoModalTitle">Informasi Gizi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="alert alert-success border-0 bg-light-green">
+                        <h6 class="fw-bold mb-2"><i class="fas fa-lightbulb me-2"></i>Mengapa Gizi Penting?</h6>
+                        <p class="mb-0 small" id="infoDescription">Deskripsi akan muncul di sini.</p>
+                    </div>
+                    <h6 class="fw-bold mb-3">Target Kebutuhan Gizi Harian (Estimasi Porsi Siang ~35%)</h6>
+                    <table class="table table-bordered text-center nutrition-table">
+                        <thead>
+                            <tr>
+                                <th>Energi (kkal)</th>
+                                <th>Protein (g)</th>
+                                <th>Karbohidrat (g)</th>
+                                <th>Lemak (g)</th>
+                                <th>Serat (g)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="infoTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detail Gizi Menu -->
+    <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Komposisi & Nilai Gizi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row">
+                        <div class="col-md-6 border-end">
+                            <h6 class="fw-bold text-success mb-3"><i class="fas fa-layer-group me-2"></i>Detail Menu</h6>
+                            <div class="detail-row">
+                                <div class="detail-icon icon-carb"><i class="fas fa-bread-slice"></i></div>
+                                <div><small class="text-muted d-block">Karbohidrat</small><strong id="m-karbo">-</strong></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-icon icon-protein"><i class="fas fa-drumstick-bite"></i></div>
+                                <div><small class="text-muted d-block">Lauk Pauk</small><strong id="m-lauk">-</strong></div>
+                            </div>
+                            <div class="detail-row">
+                                <div class="detail-icon icon-veg"><i class="fas fa-leaf"></i></div>
+                                <div><small class="text-muted d-block">Sayuran</small><strong id="m-sayur">-</strong></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="fw-bold text-success mb-3"><i class="fas fa-chart-pie me-2"></i>Total Gizi</h6>
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr><td>Energi</td><td class="text-end fw-bold"><span id="m-kcal"></span> kkal</td></tr>
+                                    <tr><td>Protein</td><td class="text-end fw-bold"><span id="m-pro"></span> g</td></tr>
+                                    <tr><td>Karbohidrat</td><td class="text-end fw-bold"><span id="m-carb"></span> g</td></tr>
+                                    <tr><td>Lemak</td><td class="text-end fw-bold"><span id="m-fat"></span> g</td></tr>
+                                    <tr><td>Serat</td><td class="text-end fw-bold"><span id="m-fiber"></span> g</td></tr>
+                                    <tr><td>Natrium</td><td class="text-end fw-bold"><span id="m-sod"></span> mg</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Data Edukasi Gizi
+        const nutritionData = {
+            'SD': {
+                desc: "Pada usia SD (7-12 tahun), anak mengalami pertumbuhan fisik dan perkembangan otak yang pesat. Asupan gizi seimbang sangat penting untuk mendukung konsentrasi belajar, daya tahan tubuh, dan pembentukan tulang serta otot yang kuat.",
+                kcal: 600, pro: 20, carb: 80, fat: 20, fiber: 8
+            },
+            'SMP': {
+                desc: "Remaja awal (13-15 tahun) memasuki masa pubertas dengan lonjakan pertumbuhan (growth spurt). Kebutuhan energi dan protein meningkat drastis untuk mendukung perubahan hormon, perkembangan organ reproduksi, dan aktivitas fisik yang tinggi.",
+                kcal: 750, pro: 25, carb: 100, fat: 25, fiber: 10
+            },
+            'SMA': {
+                desc: "Remaja akhir (16-18 tahun) membutuhkan nutrisi optimal untuk menyempurnakan pertumbuhan fisik dan mempersiapkan kematangan organ tubuh. Gizi seimbang juga krusial untuk kesehatan mental, manajemen stres akademik, dan pencegahan masalah kesehatan jangka panjang.",
+                kcal: 900, pro: 30, carb: 120, fat: 30, fiber: 12
+            }
+        };
+
+        function showNutritionInfo(level) {
+            const data = nutritionData[level];
+            if (!data) return;
+            document.getElementById('infoModalTitle').innerText = `Informasi Gizi - Jenjang ${level}`;
+            document.getElementById('infoDescription').innerText = data.desc;
+            document.getElementById('infoTableBody').innerHTML = `
+                <tr>
+                    <td class="val-highlight">${data.kcal}</td>
+                    <td class="val-highlight">${data.pro}</td>
+                    <td class="val-highlight">${data.carb}</td>
+                    <td class="val-highlight">${data.fat}</td>
+                    <td class="val-highlight">${data.fiber}</td>
+                </tr>`;
+            new bootstrap.Modal(document.getElementById('nutritionInfoModal')).show();
+        }
+
+        function showDetail(carb, lauk, sayur, kcal, pro, carbVal, fat, fiber, sod) {
+            document.getElementById('m-karbo').innerText = carb;
+            document.getElementById('m-lauk').innerText = lauk;
+            document.getElementById('m-sayur').innerText = sayur;
+            document.getElementById('m-kcal').innerText = kcal;
+            document.getElementById('m-pro').innerText = pro;
+            document.getElementById('m-carb').innerText = carbVal;
+            document.getElementById('m-fat').innerText = fat;
+            document.getElementById('m-fiber').innerText = fiber;
+            document.getElementById('m-sod').innerText = sod;
+            new bootstrap.Modal(document.getElementById('detailModal')).show();
+        }
+    </script>
+</body>
+</html>
