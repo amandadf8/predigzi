@@ -2,10 +2,6 @@ from flask import Flask, render_template, request
 import pandas as pd
 import random
 import os
-import matplotlib
-
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 
 app = Flask(__name__)
 
@@ -13,7 +9,14 @@ app = Flask(__name__)
 # LOAD DATASET
 # ==========================
 
-df = pd.read_csv("menu_mbg_level3.csv")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+csv_path = os.path.join(
+    BASE_DIR,
+    "menu_mbg_level3.csv"
+)
+
+df = pd.read_csv(csv_path)
 
 # ==========================
 # TARGET MBG
@@ -48,75 +51,6 @@ dataset_info = {
 }
 
 # ==========================
-# VISUALISASI DATASET
-# ==========================
-
-def generate_dataset_charts():
-
-    os.makedirs("static/charts", exist_ok=True)
-
-    # Histogram Kalori
-    plt.figure(figsize=(8, 5))
-    plt.hist(df["energy_kcal"], bins=20)
-    plt.title("Distribusi Kalori Menu")
-    plt.xlabel("Kalori (kkal)")
-    plt.ylabel("Jumlah Menu")
-    plt.tight_layout()
-    plt.savefig("static/charts/distribusi_kalori.png")
-    plt.close()
-
-    # Top Karbo
-    top_karbo = df["karbo"].value_counts().head(10)
-
-    plt.figure(figsize=(8, 5))
-    top_karbo.plot(kind="bar")
-    plt.title("Top 10 Karbohidrat")
-    plt.ylabel("Jumlah")
-    plt.tight_layout()
-    plt.savefig("static/charts/top_karbo.png")
-    plt.close()
-
-    # Top Protein
-    top_protein = df["protein"].value_counts().head(10)
-
-    plt.figure(figsize=(8, 5))
-    top_protein.plot(kind="bar")
-    plt.title("Top 10 Protein")
-    plt.ylabel("Jumlah")
-    plt.tight_layout()
-    plt.savefig("static/charts/top_protein.png")
-    plt.close()
-
-    # Top Sayur
-    top_sayur = df["sayur"].value_counts().head(10)
-
-    plt.figure(figsize=(8, 5))
-    top_sayur.plot(kind="bar")
-    plt.title("Top 10 Sayur")
-    plt.ylabel("Jumlah")
-    plt.tight_layout()
-    plt.savefig("static/charts/top_sayur.png")
-    plt.close()
-
-    # Scatter Plot
-    plt.figure(figsize=(8, 5))
-    plt.scatter(
-        df["protein_g"],
-        df["energy_kcal"]
-    )
-
-    plt.xlabel("Protein (g)")
-    plt.ylabel("Kalori (kkal)")
-    plt.title("Protein vs Kalori")
-    plt.tight_layout()
-    plt.savefig("static/charts/scatter_protein_kalori.png")
-    plt.close()
-
-
-# Jalankan sekali saat startup
-generate_dataset_charts()
-
-# ==========================
 # FILTER MENU
 # ==========================
 
@@ -132,9 +66,8 @@ def filter_menu(level):
 
     return hasil
 
-
 # ==========================
-# GENERATE JADWAL
+# GENERATE SCHEDULE
 # ==========================
 
 def generate_schedule(level):
@@ -144,8 +77,10 @@ def generate_schedule(level):
     if len(kandidat) == 0:
         return {}
 
+    jumlah_sample = min(len(kandidat), 72)
+
     kandidat = kandidat.sample(
-        min(len(kandidat), 72),
+        n=jumlah_sample,
         random_state=random.randint(1, 9999)
     )
 
@@ -161,11 +96,13 @@ def generate_schedule(level):
     ]
 
     schedule = {}
+
     idx = 0
 
     for minggu in range(1, 5):
 
         week_name = f"Minggu {minggu}"
+
         schedule[week_name] = {}
 
         for day in days:
@@ -181,7 +118,10 @@ def generate_schedule(level):
 
                 menus.append({
                     "menu_name": menu["menu_name"],
-                    "score": round(random.uniform(0.90, 1.00), 2),
+                    "score": round(
+                        random.uniform(0.90, 1.00),
+                        2
+                    ),
 
                     "karbo": menu["karbo"],
                     "protein": menu["protein"],
@@ -201,7 +141,6 @@ def generate_schedule(level):
 
     return schedule
 
-
 # ==========================
 # ROUTES
 # ==========================
@@ -216,11 +155,13 @@ def home():
         dataset_info=dataset_info
     )
 
-
 @app.route("/generate", methods=["POST"])
 def generate():
 
     level = request.form.get("level")
+
+    if level not in TARGETS:
+        level = "SD"
 
     schedule = generate_schedule(level)
 
@@ -231,9 +172,12 @@ def generate():
         dataset_info=dataset_info
     )
 
+@app.route("/test")
+def test():
+    return "Predigzi berjalan!"
 
 # ==========================
-# RUN APP
+# MAIN
 # ==========================
 
 if __name__ == "__main__":
